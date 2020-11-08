@@ -1,0 +1,24 @@
+{
+    "id": "87F1300B",
+    "path": "F:/project1/20201023dataportalVisualization/DNAv/server.R",
+    "project_path": "server.R",
+    "type": "r_source",
+    "hash": "2186933522",
+    "contents": "",
+    "dirty": false,
+    "created": 1603865426683.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "cursorPosition": "514,9",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1604657345,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1604657345847,
+    "read_only": false,
+    "read_only_alternatives": []
+}
