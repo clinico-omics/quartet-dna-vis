@@ -14,10 +14,12 @@ library(lattice)
 library(scales)
 library(plyr)
 library(dplyr)
+
 # new
 library(feather)
 library(heatmaply)
 library(ggthemes)
+library(dashboardthemes)
 
 #source('./code/data_convert/function_calc_SNR.R')
 #source('./code/data_convert/pre_snr.R')
