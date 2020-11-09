@@ -3,22 +3,22 @@
     "path": "F:/project1/20201023dataportalVisualization/DNAv/server.R",
     "project_path": "server.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "1970944929",
     "contents": "",
     "dirty": false,
     "created": 1603865426683.0,
     "source_on_save": false,
     "relative_order": 3,
     "properties": {
-        "cursorPosition": "450,26",
-        "scrollLine": "395"
+        "cursorPosition": "1046,4",
+        "scrollLine": "1037"
     },
     "folds": "",
-    "lastKnownWriteTime": 1604885590,
+    "lastKnownWriteTime": 1604887977,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1604885590,
+    "last_content_update": 1604887977942,
     "read_only": false,
     "read_only_alternatives": []
 }
