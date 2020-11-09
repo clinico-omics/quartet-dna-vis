@@ -3,7 +3,7 @@
     "path": "F:/project1/20201023dataportalVisualization/DNAv/ui.R",
     "project_path": "ui.R",
     "type": "r_source",
-    "hash": "3339660545",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1604225297304.0,
@@ -11,14 +11,14 @@
     "relative_order": 4,
     "properties": {
         "cursorPosition": "338,71",
-        "scrollLine": "328"
+        "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1604658237,
+    "lastKnownWriteTime": 1604885967,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1604658237572,
+    "last_content_update": 1604885967,
     "read_only": false,
     "read_only_alternatives": []
 }

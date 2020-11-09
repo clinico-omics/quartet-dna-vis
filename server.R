@@ -2,361 +2,361 @@
 
 shinyServer(function(input, output, session){
   #######################intra batch qc metrics#########################
-  df_intra_met <-  reactive(
-    fread(file = paste('./data/rnaseq/qc_type/intra_batch/', input$qc_type_intra, '.txt', sep = ''))
-  )
-  
-  ###figure
-  output$plot_intra_batch <- renderPlotly({
-    ###parameter
-    xaxis <- list(
-      title = 'group',
-      automargin = TRUE,
-      tickfont =  list(size = input$bar_plot_xy_tickfont), 
-      titlefont = list(size = input$bar_plot_titlefont)
-    )
-    
-    yaxis_fre <- list(
-      title = input$qc_type_intra,
-      automargin = TRUE,
-      tickfont =  list(size = input$bar_plot_xy_tickfont), 
-      titlefont = list(size = input$bar_plot_titlefont)
-    )
-    box_title <- input$qc_type_intra
-    legend <- list(orientation = input$barplot_r_legend_pos, font  = list(size = input$bar_plot_legend_labelsize))
-    
-    ###plot
-    if(input$qc_type_intra == 'SNR'){
-      df_intra_snr = df_intra_met()[, c("SNR", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
-      plot_ly(df_intra_snr, color = I("gray")) %>% 
-        add_segments(x = ~group, xend = ~group, yend = 0, y = ~SNR, showlegend = FALSE) %>% 
-        add_markers(x = ~group, y = ~SNR, name = input$group_a_intra, color = I("red"))  %>%
-        layout(title = box_title, font = list(size = input$bar_plot_titlefont),  
-               xaxis = xaxis, yaxis = yaxis_fre, legend = legend,  
-               margin = list(l = input$bar_plot_margin, t = input$bar_plot_margin, 
-                             r = input$bar_plot_margin,  b = input$bar_plot_margin))
-      
-    } else if (input$qc_type_intra == 'CV'){
-      df_intra_cnv = df_intra_met()[, c("CV", "sample", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
-      df_intra_cnv$CV <- as.numeric(df_intra_cnv$CV)
-      plot_ly(df_intra_cnv, x = ~group, y = ~CV, color = ~sample, type = "box") %>%
-        layout(boxmode = "group")
-      
-    } else if (input$qc_type_intra == 'Detected_Gene'){
-      df_intra_dtg = df_intra_met()[, c("n_rep", "sample", "N", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
-      print(head(df_intra_dtg))
-      batch_list = unique(df_intra_met()[[input$group_a_intra]])
-      fig_list = lapply(batch_list, make_subbar_plotly, df_intra_dtg)
-      subplot(fig_list, nrows = 2, shareX = FALSE, shareY = TRUE, titleX = TRUE)
-      
-    }
-  }) 
-  
-  #########################cross batch qc metrics########################
-  df_qc_met <-  reactive(
-    readRDS(file = paste('./data/rnaseq/qc_type/cross_batch/', input$qc_type_cross, '.rds', sep = '')) %>% as.data.frame()
-  )
-  
-  observe({
-        qc_group_b  = unique(df_qc_met()[[input$group_b]])
-        updateSelectInput(session, "group_b_unit",
-                          choices = qc_group_b,
-                          selected = tail(qc_group_b, 1))
-    })
-  
-  ###figure
-  output$plot_qc_metric <- renderPlotly({
-    dt_qc = data.frame(df_qc_met(), stringsAsFactors = FALSE)
-    
-    
-    ###parameter
-    xaxis <- list(
-      title = input$group_a_cross,
-      automargin = TRUE,
-      tickfont =  list(size = input$pca_plot_xy_tickfont), 
-      titlefont = list(size = input$pca_plot_titlefont)
-    )
-    
-    yaxis <- list(
-      title = input$qc_type_cross,
-      automargin = TRUE,
-      tickfont =  list(size = input$pca_plot_xy_tickfont), 
-      titlefont = list(size = input$pca_plot_titlefont)
-    )
-    
-    box_title <- 'rna qc metrics'
-    legend <- list(orientation = input$pca_r_legend_pos, font  = list(size = input$pca_plot_legend_labelsize))
-    
-    ###plot
-    colnames(dt_qc)[c(which(colnames(dt_qc) == 'JI'), 
-                      which(colnames(dt_qc) == 'Cor'), 
-                      which(colnames(dt_qc) == 'JacardIndex'))] = 'value'
-    group_b_num  = length(unique(dt_qc[, input$group_b]))
-    colnames(dt_qc)[which(colnames(dt_qc) == input$group_a_cross)] = 'group_a'
-    colnames(dt_qc)[which(colnames(dt_qc) == input$group_b)] = 'group_b'
-    if(group_b_num == 1){
-      
-      plot_ly(dt_qc, x = ~group_a, y = ~value, type = 'violin', 
-              box = list(visible = T), meanline = list(visible = F),
-              color = ~input$group_a)
-    } else if(group_b_num == 2){
-      dt_qc %>%
-        plot_ly(type = 'violin')  %>%
-        add_trace(
-          x = ~group_a[dt_qc[, 'group_b'] == input$group_b_unit[1]],
-          y = ~value[dt_qc[, 'group_b'] == input$group_b_unit[1]],
-          legendgroup = input$group_b_unit[1],
-          scalegroup = input$group_b_unit[1],
-          name = input$group_b_unit[1],
-          side = 'negative',
-          box = list(
-            visible = T
-          ),
-          meanline = list(
-            visible = F
-          ),
-          color = I("blue")) %>%
-        add_trace(
-          x = ~group_a[dt_qc[, 'group_b'] == input$group_b_unit[2]],
-          y = ~value[dt_qc[, 'group_b'] == input$group_b_unit[2]],
-          legendgroup = input$group_b_unit[2],
-          scalegroup = input$group_b_unit[2],
-          name = input$group_b_unit[2],
-          side = 'positive',
-          box = list(
-            visible = T
-          ),
-          meanline = list(
-            visible = F
-          ),
-          color = I("orange")
-        )  %>%
-        layout(
-          xaxis = list(
-            title = ""  
-          ),
-          yaxis = list(
-            title = "",
-            zeroline = F
-          ),
-          violingap = 0,
-          violingroupgap = 0,
-          violinmode = 'overlay'
-        )
-    } else if(group_b_num > 2){
-      plot_ly(dt_qc, x = ~group_a, y = ~value, color = ~group_b, type = "box") %>%
-      layout(boxmode = "group")
-    }
-    
-  })
-  
-  #########################pca########################
-  observe({
-    group_pca  = unique(df_exp_annot[[input$group_pca]])
-    updateSelectInput(session, "group_pca_unit",
-                      choices = group_pca,
-                      selected = group_pca)
-  })
-
-  df_exp_annot_sub <-  reactive(
-    df_exp_annot[input$group_pca_unit, on = input$group_pca][, c(input$group_pca, "logfpkm", "library", "gene"), with = F] %>%
-      setnames(input$group_pca, "batch")
-  )
-
-  ###figure
-  output$plot_pca <- renderPlotly({
-
-    if(input$pca_zscore == 'YES'){
-      pca_list = pre_pca_snr(df_exp_annot_sub = df_exp_annot_sub(), dt_meta = dt_meta,
-                             zscore_per_group = input$pca_zscore)
-      mat_pca = pca_list[[1]]
-      snr = pca_list[[2]]
-      gene_num = pca_list[[3]]
-      pro1 = pca_list[[4]]
-      pro2 = pca_list[[5]]
-      pro3 = pca_list[[6]]
-
-    } else if (input$pca_zscore == 'NO') {
-      pca_list = pre_pca_snr(df_exp_annot_sub = df_exp_annot_sub(), dt_meta = dt_meta,
-                             zscore_per_group = input$pca_zscore)
-      mat_pca = pca_list[[1]]
-      snr = pca_list[[2]]
-      gene_num = pca_list[[3]]
-      pro1 = pca_list[[4]]
-      pro2 = pca_list[[5]]
-      pro3 = pca_list[[6]]
-    }
-
-
-    ###parameter
-    xaxis <- list(
-      title = paste("PC1 (", pro1*100,  "%)", sep = ""),
-      automargin = TRUE,
-      tickfont =  list(size = input$pca_plot_xy_tickfont),
-      titlefont = list(size = input$pca_plot_titlefont)
-    )
-
-    yaxis <- list(
-      title = paste("PC2 (", pro2*100,  "%)", sep = ""),
-      automargin = TRUE,
-      tickfont =  list(size = input$pca_plot_xy_tickfont),
-      titlefont = list(size = input$pca_plot_titlefont)
-    )
-
-    zaxis <- list(
-      title = paste("PC3 (", pro3*100,  "%)", sep = ""),
-      automargin = TRUE,
-      tickfont =  list(size = input$pca_plot_xy_tickfont),
-      titlefont = list(size = input$pca_plot_titlefont)
-    )
-
-
-    box_title <-  paste('SNR = ', snr, '\n', '(N = ', gene_num, ")", sep = "")
-    legend <- list(orientation = input$pca_r_legend_pos, font  = list(size = input$pca_plot_legend_labelsize))
-    pal <- c("#4CC3D9", "#7BC8A4", "#FFC65D", "#F16745")
-
-    ###plot
-    if(input$d2_d3_switch == TRUE){
-      plot_ly(data = mat_pca, x = ~PC1, y = ~PC2, z = ~PC3, color = ~sample, colors = pal, marker = list(size = 10),
-              alpha = 1, symbol = ~symbol.batch, symbols = c('circle','triangle-up','square'), text = ~library) %>%
-        layout(title = box_title, font = list(size = input$pca_plot_titlefont),
-               xaxis = xaxis, yaxis = yaxis, zaxis = zaxis, legend = legend,
-               margin = list(l = input$pca_plot_margin, t = input$pca_plot_margin,
-                             r = input$pca_plot_margin,  b = input$pca_plot_margin))
-    } else {
-      plot_ly(data = mat_pca, x = ~PC1, y = ~PC2, color = ~sample, colors = pal, marker = list(size = 10),
-              alpha = 1, symbol = ~symbol.batch, symbols = c('circle','triangle-up','square'), text = ~library) %>%
-        layout(title = box_title, font = list(size = input$pca_plot_titlefont),
-               xaxis = xaxis, yaxis = yaxis, legend = legend,
-               margin = list(l = input$pca_plot_margin, t = input$pca_plot_margin,
-                             r = input$pca_plot_margin,  b = input$pca_plot_margin))
-    }
-  })
-  
-  ##############################reference dataset##########################
-  df_dataset <-  reactive(
-    fread(file = paste('./data/rnaseq/qc_type/reference_dataset/', input$data_type, '.txt', sep = ''))
-  )
-  
-  ###figure
-  output$plot_RD <- renderPlotly({
-    ###parameter
-    xaxis <- list(
-      title = 'group',
-      automargin = TRUE,
-      tickfont =  list(size = input$bar_plot_xy_tickfont), 
-      titlefont = list(size = input$bar_plot_titlefont)
-    )
-    
-    yaxis_fre <- list(
-      title = input$data_type,
-      automargin = TRUE,
-      tickfont =  list(size = input$bar_plot_xy_tickfont), 
-      titlefont = list(size = input$bar_plot_titlefont)
-    )
-    box_title <- input$data_type
-    legend <- list(orientation = input$barplot_r_legend_pos, font  = list(size = input$bar_plot_legend_labelsize))
-    
-    #sample color
-    pal <- c('#4CC3D9', '#7BC8A4', '#FFC65D', '#F16745')
-    pal <- setNames(pal, c("D5", "D6", "F7", "M8"))
-    
-    ###plot
-    if(input$data_type == "Detected_Gene_Distribution"){
-      detect_gene_p <- df_dataset()[prot %in% "P"]
-      detect_gene_r <- df_dataset()[prot %in% "R"]
-      fig_p = plot_ly(detect_gene_p, x= ~length.Freq, y = ~name,  type = "funnel", color = ~sample, 
-                      colors = pal) 
-      fig_r = plot_ly(detect_gene_r, x= ~length.Freq, y = ~name,  type = "funnel", color = ~sample, 
-                      colors = pal) 
-      subplot(list(fig_p, fig_r), nrows = 2, shareX = FALSE, shareY = FALSE, titleX = TRUE)
-      
-    } else if (input$data_type == "Protocols_Consensus"){
-      consensus_ratio_pos <- df_dataset()[type %in% "Detected"]
-      consensus_ratio_neg<- df_dataset()[type %in% "Non-detected"]
-      
-      fig_pos = plot_ly(consensus_ratio_pos, x = ~sample, y = ~Protocol_independent, type = 'bar', name = 'Protocol independent', color = '#1f77b4', alpha = 1) %>% 
-        add_trace(x = ~sample, y = ~PloyA_specific, name = 'PloyA specific', color = '#17becf', alpha = 0.5) %>%
-        add_trace(x = ~sample, y = ~RiboZero_specific, name = 'RiboZero specific', color = 'blue', alpha = 0.1) %>%
-        layout(yaxis = list(title = 'Count'), barmode = 'stack')
-      
-      fig_neg = plot_ly(consensus_ratio_neg, x = ~sample, y = ~Protocol_independent, type = 'bar', name = 'Protocol independent', color = '#1f77b4', alpha = 1) %>% 
-        add_trace(x = ~sample, y = ~PloyA_specific, name = 'PloyA specific', color = '#17becf', alpha = 0.5) %>%
-        add_trace(x = ~sample, y = ~RiboZero_specific, name = 'RiboZero specific', color = 'blue', alpha = 0.1) %>%
-        layout(yaxis = list(title = 'Number'), barmode = 'stack')
-      subplot(list(fig_pos, fig_neg), nrows = 1, shareX = FALSE, shareY = TRUE, titleX = TRUE)
-      
-    } else if (input$data_type == "Reference_Data_Gene_Type"){
-      gene_type_pos <- df_dataset()[type %in% 'Pos']
-      gene_type_pos_d <- dcast(gene_type_pos, Tier~biotype, value.var = "Ratio")
-      gene_type_neg <- df_dataset()[type %in% 'Neg']
-      gene_type_neg_d <- dcast(gene_type_neg, Tier~biotype, value.var = "Ratio")
-      
-      fig_detected = plot_ly(gene_type_pos_d, x = ~Tier, y = ~protein_coding, type = 'bar', name = 'protein_coding', color = '#4CC3D9', alpha = 1) %>% 
-        add_trace(x = ~Tier, y = ~lncRNA, name = 'lncRNA', color = '#7BC8A4', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~processed_pseudogene, name = 'processed_pseudogene', color = 'blue', alpha = 0.1) %>%
-        add_trace(x = ~Tier, y = ~misc_RNA, name = 'misc_RNA', color = '#FFC65D', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~miRNA, name = 'miRNA', color = '#F16745', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~others, name = 'others', color = 'grey5', alpha = 1) %>%
-        layout(yaxis = list(title = 'Ratio'), barmode = 'stack', xaxis = list(title = 'Detected'))
-      
-      fig_non_detected = plot_ly(gene_type_neg_d, x = ~Tier, y = ~protein_coding, type = 'bar', name = 'protein_coding', color = '#4CC3D9', alpha = 1) %>% 
-        add_trace(x = ~Tier, y = ~lncRNA, name = 'lncRNA', color = '#7BC8A4', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~processed_pseudogene, name = 'processed_pseudogene', color = 'blue', alpha = 0.1) %>%
-        add_trace(x = ~Tier, y = ~misc_RNA, name = 'misc_RNA', color = '#FFC65D', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~miRNA, name = 'miRNA', color = '#F16745', alpha = 1) %>%
-        add_trace(x = ~Tier, y = ~others, name = 'others', color = 'grey5', alpha = 1) %>%
-        layout(yaxis = list(title = 'Ratio'), barmode = 'stack', xaxis = list(title = 'Non-detected'))
-      subplot(list(fig_detected, fig_non_detected), nrows = 1, shareX = FALSE, shareY = TRUE, titleX = TRUE)
-      
-    } else if (input$data_type == 'Reference_dataset_Number_DEG'){
-      Reference_dataset_Number_DEG_d <- dcast(df_dataset(), compare_group~variable, value.var = 'value')
-      plot_ly(Reference_dataset_Number_DEG_d, x = ~compare_group, y = ~DEGs, type = 'bar', name = 'reference DEG', color = '#1f77b4', alpha = 1) %>% 
-        add_trace(x = ~compare_group, y = ~passp_padding, name = 'reference FC', color = '#17becf', alpha = 0.5) %>%
-        add_trace(x = ~compare_group, y = ~raw_padding, name = 'reference detected gene', color = 'blue', alpha = 0.1) %>%
-        layout(yaxis = list(title = 'Count'), barmode = 'stack', xaxis = list(title = 'sample pairs'))
-      
-    } else if (input$data_type == 'Reference_Data_DEG_Distribution'){
-      deg_d5d6 <- df_dataset()[compare_group %in% 'D6/D5']
-      deg_f7d5 <- df_dataset()[compare_group %in% 'F7/D5']
-      deg_m8d5 <- df_dataset()[compare_group %in% 'M8/D5']
-      deg_f7d6 <- df_dataset()[compare_group %in% 'F7/D6']
-      deg_m8d6 <- df_dataset()[compare_group %in% 'M8/D6']
-      deg_m8f7 <- df_dataset()[compare_group %in% 'M8/F7']
-      fig1 <- plot_ly(deg_d5d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'D6/D5') %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(D6/D5) value'))
-      fig2 <- plot_ly(deg_f7d5, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'F7/D5')  %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(F7/D5) value'))
-      fig3 <- plot_ly(deg_m8d5, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/D5')  %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/D5) value'))
-      fig4 <- plot_ly(deg_f7d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'F7/D6')  %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(F7/D6) value'))
-      fig5 <- plot_ly(deg_m8d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/D6')  %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/D6) value'))
-      fig6 <- plot_ly(deg_m8f7, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/F7') %>%
-        layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/F7) value'))
-      
-      subplot(list(fig1, fig2, fig3, fig4, fig5, fig6), nrows = 2, shareX = FALSE, shareY = FALSE, titleX = TRUE)
-    } else if (input$data_type == 'Performance_Evaluation_Gene_Detection'){
-      per_det_gene <- df_dataset()
-      plot_ly(data = per_det_gene, x = ~Specificity_tier1, y = ~Sensitivity_tier1,  marker = list(size = 10),
-              color = ~Batch, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~File)
-    } else if (input$data_type == 'Performance_Evaluation_Reletive_Expression'){
-      per_rel_exp <- df_dataset()
-      plot_ly(data = per_rel_exp, x = ~corr, y = ~consistent,  marker = list(size = 10),
-              color = ~batch.y, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~batch_pairs)
-    } else if (input$data_type == 'Performance_Evaluation_DEG'){
-      per_deg <- df_dataset()
-      plot_ly(data = per_deg, x = ~Specificity, y = ~Sensitivity,  marker = list(size = 10),
-              color = ~Batch, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~Compare_group)
-    } else if (input$data_type == 'QC_Metrics_Correlation') {
-      metrics_corr <- as.matrix(cor(df_dataset(), method = "spearman"))
-      fig <- plot_ly(
-        x = rownames(metrics_corr), y = colnames(metrics_corr),
-        z = metrics_corr, type = "heatmap", colors = colorRamp(c("blue", "white", "red"))) %>%
-        layout(margin = list(l = 120))
-    }
-  }) 
+  # df_intra_met <-  reactive(
+  #   fread(file = paste('./data/rnaseq/qc_type/intra_batch/', input$qc_type_intra, '.txt', sep = ''))
+  # )
+  # 
+  # ###figure
+  # output$plot_intra_batch <- renderPlotly({
+  #   ###parameter
+  #   xaxis <- list(
+  #     title = 'group',
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$bar_plot_xy_tickfont), 
+  #     titlefont = list(size = input$bar_plot_titlefont)
+  #   )
+  #   
+  #   yaxis_fre <- list(
+  #     title = input$qc_type_intra,
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$bar_plot_xy_tickfont), 
+  #     titlefont = list(size = input$bar_plot_titlefont)
+  #   )
+  #   box_title <- input$qc_type_intra
+  #   legend <- list(orientation = input$barplot_r_legend_pos, font  = list(size = input$bar_plot_legend_labelsize))
+  #   
+  #   ###plot
+  #   if(input$qc_type_intra == 'SNR'){
+  #     df_intra_snr = df_intra_met()[, c("SNR", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
+  #     plot_ly(df_intra_snr, color = I("gray")) %>% 
+  #       add_segments(x = ~group, xend = ~group, yend = 0, y = ~SNR, showlegend = FALSE) %>% 
+  #       add_markers(x = ~group, y = ~SNR, name = input$group_a_intra, color = I("red"))  %>%
+  #       layout(title = box_title, font = list(size = input$bar_plot_titlefont),  
+  #              xaxis = xaxis, yaxis = yaxis_fre, legend = legend,  
+  #              margin = list(l = input$bar_plot_margin, t = input$bar_plot_margin, 
+  #                            r = input$bar_plot_margin,  b = input$bar_plot_margin))
+  #     
+  #   } else if (input$qc_type_intra == 'CV'){
+  #     df_intra_cnv = df_intra_met()[, c("CV", "sample", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
+  #     df_intra_cnv$CV <- as.numeric(df_intra_cnv$CV)
+  #     plot_ly(df_intra_cnv, x = ~group, y = ~CV, color = ~sample, type = "box") %>%
+  #       layout(boxmode = "group")
+  #     
+  #   } else if (input$qc_type_intra == 'Detected_Gene'){
+  #     df_intra_dtg = df_intra_met()[, c("n_rep", "sample", "N", input$group_a_intra), with = F] %>% setnames(input$group_a_intra, "group")
+  #     print(head(df_intra_dtg))
+  #     batch_list = unique(df_intra_met()[[input$group_a_intra]])
+  #     fig_list = lapply(batch_list, make_subbar_plotly, df_intra_dtg)
+  #     subplot(fig_list, nrows = 2, shareX = FALSE, shareY = TRUE, titleX = TRUE)
+  #     
+  #   }
+  # }) 
+  # 
+  # #########################cross batch qc metrics########################
+  # df_qc_met <-  reactive(
+  #   readRDS(file = paste('./data/rnaseq/qc_type/cross_batch/', input$qc_type_cross, '.rds', sep = '')) %>% as.data.frame()
+  # )
+  # 
+  # observe({
+  #       qc_group_b  = unique(df_qc_met()[[input$group_b]])
+  #       updateSelectInput(session, "group_b_unit",
+  #                         choices = qc_group_b,
+  #                         selected = tail(qc_group_b, 1))
+  #   })
+  # 
+  # ###figure
+  # output$plot_qc_metric <- renderPlotly({
+  #   dt_qc = data.frame(df_qc_met(), stringsAsFactors = FALSE)
+  #   
+  #   
+  #   ###parameter
+  #   xaxis <- list(
+  #     title = input$group_a_cross,
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$pca_plot_xy_tickfont), 
+  #     titlefont = list(size = input$pca_plot_titlefont)
+  #   )
+  #   
+  #   yaxis <- list(
+  #     title = input$qc_type_cross,
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$pca_plot_xy_tickfont), 
+  #     titlefont = list(size = input$pca_plot_titlefont)
+  #   )
+  #   
+  #   box_title <- 'rna qc metrics'
+  #   legend <- list(orientation = input$pca_r_legend_pos, font  = list(size = input$pca_plot_legend_labelsize))
+  #   
+  #   ###plot
+  #   colnames(dt_qc)[c(which(colnames(dt_qc) == 'JI'), 
+  #                     which(colnames(dt_qc) == 'Cor'), 
+  #                     which(colnames(dt_qc) == 'JacardIndex'))] = 'value'
+  #   group_b_num  = length(unique(dt_qc[, input$group_b]))
+  #   colnames(dt_qc)[which(colnames(dt_qc) == input$group_a_cross)] = 'group_a'
+  #   colnames(dt_qc)[which(colnames(dt_qc) == input$group_b)] = 'group_b'
+  #   if(group_b_num == 1){
+  #     
+  #     plot_ly(dt_qc, x = ~group_a, y = ~value, type = 'violin', 
+  #             box = list(visible = T), meanline = list(visible = F),
+  #             color = ~input$group_a)
+  #   } else if(group_b_num == 2){
+  #     dt_qc %>%
+  #       plot_ly(type = 'violin')  %>%
+  #       add_trace(
+  #         x = ~group_a[dt_qc[, 'group_b'] == input$group_b_unit[1]],
+  #         y = ~value[dt_qc[, 'group_b'] == input$group_b_unit[1]],
+  #         legendgroup = input$group_b_unit[1],
+  #         scalegroup = input$group_b_unit[1],
+  #         name = input$group_b_unit[1],
+  #         side = 'negative',
+  #         box = list(
+  #           visible = T
+  #         ),
+  #         meanline = list(
+  #           visible = F
+  #         ),
+  #         color = I("blue")) %>%
+  #       add_trace(
+  #         x = ~group_a[dt_qc[, 'group_b'] == input$group_b_unit[2]],
+  #         y = ~value[dt_qc[, 'group_b'] == input$group_b_unit[2]],
+  #         legendgroup = input$group_b_unit[2],
+  #         scalegroup = input$group_b_unit[2],
+  #         name = input$group_b_unit[2],
+  #         side = 'positive',
+  #         box = list(
+  #           visible = T
+  #         ),
+  #         meanline = list(
+  #           visible = F
+  #         ),
+  #         color = I("orange")
+  #       )  %>%
+  #       layout(
+  #         xaxis = list(
+  #           title = ""  
+  #         ),
+  #         yaxis = list(
+  #           title = "",
+  #           zeroline = F
+  #         ),
+  #         violingap = 0,
+  #         violingroupgap = 0,
+  #         violinmode = 'overlay'
+  #       )
+  #   } else if(group_b_num > 2){
+  #     plot_ly(dt_qc, x = ~group_a, y = ~value, color = ~group_b, type = "box") %>%
+  #     layout(boxmode = "group")
+  #   }
+  #   
+  # })
+  # 
+  # #########################pca########################
+  # observe({
+  #   group_pca  = unique(df_exp_annot[[input$group_pca]])
+  #   updateSelectInput(session, "group_pca_unit",
+  #                     choices = group_pca,
+  #                     selected = group_pca)
+  # })
+  # 
+  # df_exp_annot_sub <-  reactive(
+  #   df_exp_annot[input$group_pca_unit, on = input$group_pca][, c(input$group_pca, "logfpkm", "library", "gene"), with = F] %>%
+  #     setnames(input$group_pca, "batch")
+  # )
+  # 
+  # ###figure
+  # output$plot_pca <- renderPlotly({
+  # 
+  #   if(input$pca_zscore == 'YES'){
+  #     pca_list = pre_pca_snr(df_exp_annot_sub = df_exp_annot_sub(), dt_meta = dt_meta,
+  #                            zscore_per_group = input$pca_zscore)
+  #     mat_pca = pca_list[[1]]
+  #     snr = pca_list[[2]]
+  #     gene_num = pca_list[[3]]
+  #     pro1 = pca_list[[4]]
+  #     pro2 = pca_list[[5]]
+  #     pro3 = pca_list[[6]]
+  # 
+  #   } else if (input$pca_zscore == 'NO') {
+  #     pca_list = pre_pca_snr(df_exp_annot_sub = df_exp_annot_sub(), dt_meta = dt_meta,
+  #                            zscore_per_group = input$pca_zscore)
+  #     mat_pca = pca_list[[1]]
+  #     snr = pca_list[[2]]
+  #     gene_num = pca_list[[3]]
+  #     pro1 = pca_list[[4]]
+  #     pro2 = pca_list[[5]]
+  #     pro3 = pca_list[[6]]
+  #   }
+  # 
+  # 
+  #   ###parameter
+  #   xaxis <- list(
+  #     title = paste("PC1 (", pro1*100,  "%)", sep = ""),
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$pca_plot_xy_tickfont),
+  #     titlefont = list(size = input$pca_plot_titlefont)
+  #   )
+  # 
+  #   yaxis <- list(
+  #     title = paste("PC2 (", pro2*100,  "%)", sep = ""),
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$pca_plot_xy_tickfont),
+  #     titlefont = list(size = input$pca_plot_titlefont)
+  #   )
+  # 
+  #   zaxis <- list(
+  #     title = paste("PC3 (", pro3*100,  "%)", sep = ""),
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$pca_plot_xy_tickfont),
+  #     titlefont = list(size = input$pca_plot_titlefont)
+  #   )
+  # 
+  # 
+  #   box_title <-  paste('SNR = ', snr, '\n', '(N = ', gene_num, ")", sep = "")
+  #   legend <- list(orientation = input$pca_r_legend_pos, font  = list(size = input$pca_plot_legend_labelsize))
+  #   pal <- c("#4CC3D9", "#7BC8A4", "#FFC65D", "#F16745")
+  # 
+  #   ###plot
+  #   if(input$d2_d3_switch == TRUE){
+  #     plot_ly(data = mat_pca, x = ~PC1, y = ~PC2, z = ~PC3, color = ~sample, colors = pal, marker = list(size = 10),
+  #             alpha = 1, symbol = ~symbol.batch, symbols = c('circle','triangle-up','square'), text = ~library) %>%
+  #       layout(title = box_title, font = list(size = input$pca_plot_titlefont),
+  #              xaxis = xaxis, yaxis = yaxis, zaxis = zaxis, legend = legend,
+  #              margin = list(l = input$pca_plot_margin, t = input$pca_plot_margin,
+  #                            r = input$pca_plot_margin,  b = input$pca_plot_margin))
+  #   } else {
+  #     plot_ly(data = mat_pca, x = ~PC1, y = ~PC2, color = ~sample, colors = pal, marker = list(size = 10),
+  #             alpha = 1, symbol = ~symbol.batch, symbols = c('circle','triangle-up','square'), text = ~library) %>%
+  #       layout(title = box_title, font = list(size = input$pca_plot_titlefont),
+  #              xaxis = xaxis, yaxis = yaxis, legend = legend,
+  #              margin = list(l = input$pca_plot_margin, t = input$pca_plot_margin,
+  #                            r = input$pca_plot_margin,  b = input$pca_plot_margin))
+  #   }
+  # })
+  # 
+  # ##############################reference dataset##########################
+  # df_dataset <-  reactive(
+  #   fread(file = paste('./data/rnaseq/qc_type/reference_dataset/', input$data_type, '.txt', sep = ''))
+  # )
+  # 
+  # ###figure
+  # output$plot_RD <- renderPlotly({
+  #   ###parameter
+  #   xaxis <- list(
+  #     title = 'group',
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$bar_plot_xy_tickfont), 
+  #     titlefont = list(size = input$bar_plot_titlefont)
+  #   )
+  #   
+  #   yaxis_fre <- list(
+  #     title = input$data_type,
+  #     automargin = TRUE,
+  #     tickfont =  list(size = input$bar_plot_xy_tickfont), 
+  #     titlefont = list(size = input$bar_plot_titlefont)
+  #   )
+  #   box_title <- input$data_type
+  #   legend <- list(orientation = input$barplot_r_legend_pos, font  = list(size = input$bar_plot_legend_labelsize))
+  #   
+  #   #sample color
+  #   pal <- c('#4CC3D9', '#7BC8A4', '#FFC65D', '#F16745')
+  #   pal <- setNames(pal, c("D5", "D6", "F7", "M8"))
+  #   
+  #   ###plot
+  #   if(input$data_type == "Detected_Gene_Distribution"){
+  #     detect_gene_p <- df_dataset()[prot %in% "P"]
+  #     detect_gene_r <- df_dataset()[prot %in% "R"]
+  #     fig_p = plot_ly(detect_gene_p, x= ~length.Freq, y = ~name,  type = "funnel", color = ~sample, 
+  #                     colors = pal) 
+  #     fig_r = plot_ly(detect_gene_r, x= ~length.Freq, y = ~name,  type = "funnel", color = ~sample, 
+  #                     colors = pal) 
+  #     subplot(list(fig_p, fig_r), nrows = 2, shareX = FALSE, shareY = FALSE, titleX = TRUE)
+  #     
+  #   } else if (input$data_type == "Protocols_Consensus"){
+  #     consensus_ratio_pos <- df_dataset()[type %in% "Detected"]
+  #     consensus_ratio_neg<- df_dataset()[type %in% "Non-detected"]
+  #     
+  #     fig_pos = plot_ly(consensus_ratio_pos, x = ~sample, y = ~Protocol_independent, type = 'bar', name = 'Protocol independent', color = '#1f77b4', alpha = 1) %>% 
+  #       add_trace(x = ~sample, y = ~PloyA_specific, name = 'PloyA specific', color = '#17becf', alpha = 0.5) %>%
+  #       add_trace(x = ~sample, y = ~RiboZero_specific, name = 'RiboZero specific', color = 'blue', alpha = 0.1) %>%
+  #       layout(yaxis = list(title = 'Count'), barmode = 'stack')
+  #     
+  #     fig_neg = plot_ly(consensus_ratio_neg, x = ~sample, y = ~Protocol_independent, type = 'bar', name = 'Protocol independent', color = '#1f77b4', alpha = 1) %>% 
+  #       add_trace(x = ~sample, y = ~PloyA_specific, name = 'PloyA specific', color = '#17becf', alpha = 0.5) %>%
+  #       add_trace(x = ~sample, y = ~RiboZero_specific, name = 'RiboZero specific', color = 'blue', alpha = 0.1) %>%
+  #       layout(yaxis = list(title = 'Number'), barmode = 'stack')
+  #     subplot(list(fig_pos, fig_neg), nrows = 1, shareX = FALSE, shareY = TRUE, titleX = TRUE)
+  #     
+  #   } else if (input$data_type == "Reference_Data_Gene_Type"){
+  #     gene_type_pos <- df_dataset()[type %in% 'Pos']
+  #     gene_type_pos_d <- dcast(gene_type_pos, Tier~biotype, value.var = "Ratio")
+  #     gene_type_neg <- df_dataset()[type %in% 'Neg']
+  #     gene_type_neg_d <- dcast(gene_type_neg, Tier~biotype, value.var = "Ratio")
+  #     
+  #     fig_detected = plot_ly(gene_type_pos_d, x = ~Tier, y = ~protein_coding, type = 'bar', name = 'protein_coding', color = '#4CC3D9', alpha = 1) %>% 
+  #       add_trace(x = ~Tier, y = ~lncRNA, name = 'lncRNA', color = '#7BC8A4', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~processed_pseudogene, name = 'processed_pseudogene', color = 'blue', alpha = 0.1) %>%
+  #       add_trace(x = ~Tier, y = ~misc_RNA, name = 'misc_RNA', color = '#FFC65D', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~miRNA, name = 'miRNA', color = '#F16745', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~others, name = 'others', color = 'grey5', alpha = 1) %>%
+  #       layout(yaxis = list(title = 'Ratio'), barmode = 'stack', xaxis = list(title = 'Detected'))
+  #     
+  #     fig_non_detected = plot_ly(gene_type_neg_d, x = ~Tier, y = ~protein_coding, type = 'bar', name = 'protein_coding', color = '#4CC3D9', alpha = 1) %>% 
+  #       add_trace(x = ~Tier, y = ~lncRNA, name = 'lncRNA', color = '#7BC8A4', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~processed_pseudogene, name = 'processed_pseudogene', color = 'blue', alpha = 0.1) %>%
+  #       add_trace(x = ~Tier, y = ~misc_RNA, name = 'misc_RNA', color = '#FFC65D', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~miRNA, name = 'miRNA', color = '#F16745', alpha = 1) %>%
+  #       add_trace(x = ~Tier, y = ~others, name = 'others', color = 'grey5', alpha = 1) %>%
+  #       layout(yaxis = list(title = 'Ratio'), barmode = 'stack', xaxis = list(title = 'Non-detected'))
+  #     subplot(list(fig_detected, fig_non_detected), nrows = 1, shareX = FALSE, shareY = TRUE, titleX = TRUE)
+  #     
+  #   } else if (input$data_type == 'Reference_dataset_Number_DEG'){
+  #     Reference_dataset_Number_DEG_d <- dcast(df_dataset(), compare_group~variable, value.var = 'value')
+  #     plot_ly(Reference_dataset_Number_DEG_d, x = ~compare_group, y = ~DEGs, type = 'bar', name = 'reference DEG', color = '#1f77b4', alpha = 1) %>% 
+  #       add_trace(x = ~compare_group, y = ~passp_padding, name = 'reference FC', color = '#17becf', alpha = 0.5) %>%
+  #       add_trace(x = ~compare_group, y = ~raw_padding, name = 'reference detected gene', color = 'blue', alpha = 0.1) %>%
+  #       layout(yaxis = list(title = 'Count'), barmode = 'stack', xaxis = list(title = 'sample pairs'))
+  #     
+  #   } else if (input$data_type == 'Reference_Data_DEG_Distribution'){
+  #     deg_d5d6 <- df_dataset()[compare_group %in% 'D6/D5']
+  #     deg_f7d5 <- df_dataset()[compare_group %in% 'F7/D5']
+  #     deg_m8d5 <- df_dataset()[compare_group %in% 'M8/D5']
+  #     deg_f7d6 <- df_dataset()[compare_group %in% 'F7/D6']
+  #     deg_m8d6 <- df_dataset()[compare_group %in% 'M8/D6']
+  #     deg_m8f7 <- df_dataset()[compare_group %in% 'M8/F7']
+  #     fig1 <- plot_ly(deg_d5d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'D6/D5') %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(D6/D5) value'))
+  #     fig2 <- plot_ly(deg_f7d5, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'F7/D5')  %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(F7/D5) value'))
+  #     fig3 <- plot_ly(deg_m8d5, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/D5')  %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/D5) value'))
+  #     fig4 <- plot_ly(deg_f7d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'F7/D6')  %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(F7/D6) value'))
+  #     fig5 <- plot_ly(deg_m8d6, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/D6')  %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/D6) value'))
+  #     fig6 <- plot_ly(deg_m8f7, x = ~abslog2FC, y = ~Value_mod, type = 'bar', name = 'M8/F7') %>%
+  #       layout(yaxis = list(title = 'Number of DEGs'), xaxis = list(title = 'absolute of log2(M8/F7) value'))
+  #     
+  #     subplot(list(fig1, fig2, fig3, fig4, fig5, fig6), nrows = 2, shareX = FALSE, shareY = FALSE, titleX = TRUE)
+  #   } else if (input$data_type == 'Performance_Evaluation_Gene_Detection'){
+  #     per_det_gene <- df_dataset()
+  #     plot_ly(data = per_det_gene, x = ~Specificity_tier1, y = ~Sensitivity_tier1,  marker = list(size = 10),
+  #             color = ~Batch, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~File)
+  #   } else if (input$data_type == 'Performance_Evaluation_Reletive_Expression'){
+  #     per_rel_exp <- df_dataset()
+  #     plot_ly(data = per_rel_exp, x = ~corr, y = ~consistent,  marker = list(size = 10),
+  #             color = ~batch.y, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~batch_pairs)
+  #   } else if (input$data_type == 'Performance_Evaluation_DEG'){
+  #     per_deg <- df_dataset()
+  #     plot_ly(data = per_deg, x = ~Specificity, y = ~Sensitivity,  marker = list(size = 10),
+  #             color = ~Batch, symbol = ~DataQual, symbols = c('circle','triangle-up','square'), text = ~Compare_group)
+  #   } else if (input$data_type == 'QC_Metrics_Correlation') {
+  #     metrics_corr <- as.matrix(cor(df_dataset(), method = "spearman"))
+  #     fig <- plot_ly(
+  #       x = rownames(metrics_corr), y = colnames(metrics_corr),
+  #       z = metrics_corr, type = "heatmap", colors = colorRamp(c("blue", "white", "red"))) %>%
+  #       layout(margin = list(l = 120))
+  #   }
+  # }) 
   
   ############################## Mendelian Violations##########################
   
