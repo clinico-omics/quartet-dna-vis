@@ -1,3 +1,7 @@
+html, body, .wrapper {
+  height: unset !important;
+}
+
 .main-header {
   display: none;
 }

@@ -1,19 +1,30 @@
 #ui.R
 
 sidebar <- dashboardSidebar(
-  tags$style(".left-side, .main-sidebar {padding-top: 0px}"),
+ # disable =T,
+  
+  tags$head(
+    tags$style(HTML(".sidebar {
+                      height: 90vh; overflow-y: auto;
+                    }"
+    ) # close HTML       
+    )            # close tags$style
+  ),   
+  #tags$style(".left-side, .main-sidebar {padding-top: 0px; height: 100%; overflow: scroll;}"),
   width = 300,
   sidebarMenu(id="tabs",
+              selected = F,
               menuItem("Mendelian Violations", 
                        tabName = "mendelian", 
                        icon = icon("angle-double-right"),
-                       selected = TRUE), 
+                       selected = F
+                       ), 
               fluidRow(
                 column(11,
                        conditionalPanel(
                          "input.tabs === 'mendelian'",
                          div(
-                           #style = "font-size:10px; font-family:serif; font-weight:normal",
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12, 
                                   
                                   selectInput("Mendelian_Violations",
@@ -422,6 +433,17 @@ sidebar <- dashboardSidebar(
 )
 
 body <- dashboardBody(
+
+  tags$head(tags$style(HTML("
+                                #final_text {
+                                  text-align: center;
+                                }
+                                div.box-header {
+                                  text-align: center;
+                                }
+                                "))),
+  
+  
   theme_onenote,
   #shinyDashboardThemes(
     #theme = "onenote",
@@ -433,15 +455,15 @@ body <- dashboardBody(
     # Mendelian Violations
     tabItem(
       tabName = "mendelian",
-      selected = TRUE,
-      
+      selected = F,
       fluidRow(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("mendelian_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible =FALSE,
+                   status = "primary",
                    title = "Mendelian Violations", 
-                   solidHeader = TRUE)
+                   solidHeader = T)
         )
       )
     ),
@@ -454,7 +476,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Variant_Quality_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Variant Quality",
                    solidHeader = TRUE)
         )
@@ -469,7 +492,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("diff_region_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Difficult Genomic Regions",  
                    solidHeader = TRUE)
         )
@@ -484,7 +508,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("variant_validation_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Variant Validation",  
                    solidHeader = TRUE)
         )
@@ -499,7 +524,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("SV_Reference_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "SV Reference", 
                    solidHeader = TRUE)
         )
@@ -514,7 +540,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Performance_Assessment_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Performance Assessment",  
                    solidHeader = TRUE)
         )
@@ -528,7 +555,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Variant_Statistics_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Variant Statistics",  
                    solidHeader = TRUE)
         )
@@ -542,7 +570,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Jaccard_Index_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Jaccard Index",  
                    solidHeader = TRUE)
         )
@@ -556,7 +585,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Quartet_Advantage_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Quartet Advantage",  
                    solidHeader = TRUE)
         )
@@ -570,7 +600,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Small_Variants_Distribution_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Small Variants Distribution",  
                    solidHeader = TRUE)
         )
@@ -584,7 +615,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Reference_Datasets_Summary_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Reference Datasets Summary",  
                    solidHeader = TRUE)
         )
@@ -598,7 +630,8 @@ body <- dashboardBody(
         column(width = 12,
                box(width = NULL, 
                    withSpinner(plotlyOutput("Large_Deletion_plot", height = "600px")), 
-                   collapsible = TRUE,
+                   collapsible = FALSE,
+                   status = "primary",
                    title = "Large Deletion",  
                    solidHeader = TRUE)
         )
