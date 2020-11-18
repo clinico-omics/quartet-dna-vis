@@ -1,6 +1,7 @@
 #ui.R
 
 sidebar <- dashboardSidebar(
+  tags$style(".left-side, .main-sidebar {padding-top: 0px}"),
   width = 300,
   sidebarMenu(id="tabs",
               menuItem("Mendelian Violations", 
@@ -82,9 +83,8 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'variant_quality'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
-                                  
-                                  
                                   selectInput("Variant_Quality_type",
                                               label = 'Variant Quality Type',
                                               choices = c('Small Variants', 'Structural Variants'),
@@ -129,6 +129,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'diff_region'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,      
                                   selectInput("diff_region_variant_type",
                                               label = 'Variant Type',
@@ -160,6 +161,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'variant_validation'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("variant_validation_type",
                                               label = 'Variant type',
@@ -185,6 +187,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'SV_Reference'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("SV_Reference_type",
                                               label = 'SV Reference Type',
@@ -216,6 +219,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Performance_Assessment'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,  
                                   selectInput("PA_variant_type",
                                               label = 'Variant Type',
@@ -247,6 +251,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Variant_Statistics'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Variant_Statistics_type",
                                               label = 'Variant Type',
@@ -279,6 +284,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Jaccard_Index'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Jaccard_Index_type",
                                               label = 'Variant Type',
@@ -303,6 +309,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Quartet_Advantage'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Quartet_Advantage_type",
                                               label = 'Variant Type',
@@ -330,6 +337,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Small_Variants_Distribution'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Small_Variants_Distribution_type",
                                               label = 'Distribution Type',
@@ -353,6 +361,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Reference_Datasets_Summary'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Reference_Datasets_Summary_type",
                                               label = 'Variant Type',
@@ -384,6 +393,7 @@ sidebar <- dashboardSidebar(
                        conditionalPanel(
                          "input.tabs === 'Large_Deletion'",
                          div(
+                           style = "font-size:12px; font-family:serif; font-weight:normal",
                            column(12,
                                   selectInput("Large_Deletion_Variant_type",
                                               label = 'Variant Type',
@@ -412,9 +422,12 @@ sidebar <- dashboardSidebar(
 )
 
 body <- dashboardBody(
-  shinyDashboardThemes(
-    theme = "onenote"
-  ),
+  theme_onenote,
+  #shinyDashboardThemes(
+    #theme = "onenote",
+    #theme = "poor_mans_flatly"
+    
+ # ),
   
   tabItems(
     # Mendelian Violations
@@ -598,7 +611,7 @@ body <- dashboardBody(
 )
 
 dashboardPage(
-  dashboardHeader(title = "Quartet Vis DNA"),
+  dashboardHeader(title = "Quartet Vis DNA",titleWidth = 300, disable = TRUE),
   sidebar,
   body
 )

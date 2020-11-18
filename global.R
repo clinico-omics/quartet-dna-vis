@@ -28,6 +28,7 @@ library(dashboardthemes)
 source('./code/data_convert/plotly_heatmap.R')
 source('./code/data_convert/SNV_SV_quality.R')
 source('./code/data_convert/mendel_ratio_SV_SNV_plotly.R')
+source('./code/data_convert/theme_vis.R')
 
 ####################### snv_distri_plotly #################
 
